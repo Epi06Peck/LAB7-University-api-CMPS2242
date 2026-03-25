@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"time"
+
+ 	"github.com/lib/pq"
 )
 
 // struct model
@@ -38,7 +40,7 @@ func (app *application) listCourses(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var c Course
-		err := rows.Scan(&c.Code, &c.Title, &c.Credits, &c.Enrolled, &c.Instructors)
+		err := rows.Scan(&c.Code, &c.Title, &c.Credits, &c.Enrolled, pq.Array(&c.Instructors),)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -73,7 +75,7 @@ func (app *application) getCourse(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	err := app.db.QueryRowContext(ctx, query, code).
-		Scan(&c.Code, &c.Title, &c.Credits, &c.Enrolled, &c.Instructors)
+		Scan(&c.Code, &c.Title, &c.Credits, &c.Enrolled, pq.Array(&c.Instructors),)
 
 	if err != nil {
 		switch {
@@ -122,12 +124,12 @@ func (app *application) createCourse(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	_, err = app.db.ExecContext(ctx, query,
-		input.Code,
-		input.Title,
-		input.Credits,
-		input.Enrolled,
-		input.Instructors,
-	)
+	input.Code,
+	input.Title,
+	input.Credits,
+	input.Enrolled,
+	pq.Array(input.Instructors), 
+)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -178,7 +180,7 @@ func (app *application) updateCourse(w http.ResponseWriter, r *http.Request) {
 		input.Title,
 		input.Credits,
 		input.Enrolled,
-		input.Instructors,
+		pq.Array(input.Instructors),
 		code,
 	)
 	if err != nil {
